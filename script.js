@@ -2,68 +2,158 @@ import { Grid } from "./grid.js"
 import { Tile } from "./tile.js"
 
 const userDevice = navigator.userAgent
-// console.log(userDevice)
-// alert(`Your device is ${userDevice}`)
 
 const gameBoard = document.getElementById('game-board')
 
 const grid = new Grid(gameBoard)
 grid.getRandomEmptyCell().linkTile(new Tile(gameBoard))
 grid.getRandomEmptyCell().linkTile(new Tile(gameBoard))
-setupInputOnce()
 
-function setupInputOnce() {
-    window.addEventListener('keydown', handleInput, {once: true})
-}
+if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userDevice)) {
+    // код для мобильных устройств
+    // console.log('mobile')
 
-async function handleInput(event) {
-    // console.log(event.key)
-    switch (event.key) {
-        case 'ArrowUp':
-            if(!canMoveUp()) {
-                setupInputOnce()
-                return
-            }
-            await moveUp()
-            break
-        case 'ArrowDown':
-            if(!canMoveDown()) {
-                setupInputOnce()
-                return
-            }
-            await moveDown()
-            break
-        case 'ArrowLeft':
-            if(!canMoveLeft()) {
-                setupInputOnce()
-                return
-            }
-            await moveLeft()
-            break
-        case 'ArrowRight':
-            if(!canMoveRight()) {
-                setupInputOnce()
-                return
-            }
-            await moveRight()
-            break                        
+    setupTouchInputOnce()
+
+    function setupTouchInputOnce() {
+        window.addEventListener('touchstart', handleTouchStart, {once: true})
+        window.addEventListener('touchmove', handleTouchMove, {once: true})
+    }
+
+    let x1 = null
+    let y1 = null
+
+
+    async function handleTouchStart(event) {
+        x1 = event.touches[0].clientX
+        y1 = event.touches[0].clientY
+
+        setupTouchInputOnce()
+    }
+
+    async function handleTouchMove(event) {
+        if (!x1 || !y1) {
+            return false
+        }
+
+        let x2 = event.touches[0].clientX
+        let y2 = event.touches[0].clientY
+
+        let xDiff = x2 - x1
+        let yDiff = y2 - y1
+
+        if (Math.abs(xDiff) > Math.abs(yDiff)) {
+
+            if (xDiff > 0) {
+                // console.log('right')  
+                if(!canMoveRight()) {
+                    return
+                }
+                await moveRight()
+            } 
+            else {
+                // console.log('left')
+                if(!canMoveLeft()) {
+                    return
+                }
+                await moveLeft()
+            } 
+        } else {
+
+            if (yDiff > 0) {
+                // console.log('down')
+                if(!canMoveDown()) {
+                    return
+                }
+                await moveDown()
+            } 
+            else {
+                // console.log('top')
+                if(!canMoveUp()) {
+                    return
+                }
+                await moveUp()
+            } 
+        }
+
+        x1 = null
+        y1 = null
+
+        const newTile = new Tile(gameBoard)
+        grid.getRandomEmptyCell().linkTile(newTile)
     
-        default:
-            setupInputOnce()
+        if (!canMoveUp() && !canMoveDown() && !canMoveLeft() && !canMoveRight()) {
+            await newTile.waitForAnimationEnd()
+            alert('Game over! Try again!!!!')
+            window.location.reload()
             return
-    }
+        }
 
-    const newTile = new Tile(gameBoard)
-    grid.getRandomEmptyCell().linkTile(newTile)
-
-    if (!canMoveUp() && !canMoveDown() && !canMoveLeft() && !canMoveRight()) {
-        await newTile.waitForAnimationEnd()
-        alert('Game over! Try again!!!')
-        return
+        setupTouchInputOnce()
     }
+    
+
+  } else {
+    // код для обычных устройств
 
     setupInputOnce()
+
+    function setupInputOnce() {
+        window.addEventListener('keydown', handleInput, {once: true})
+    }
+    
+    async function handleInput(event) {
+        // console.log(event.key)
+        switch (event.key) {
+            case 'ArrowUp':
+                if(!canMoveUp()) {
+                    setupInputOnce()
+                    return
+                }
+                await moveUp()
+                break
+            case 'ArrowDown':
+                if(!canMoveDown()) {
+                    setupInputOnce()
+                    return
+                }
+                await moveDown()
+                break
+            case 'ArrowLeft':
+                if(!canMoveLeft()) {
+                    setupInputOnce()
+                    return
+                }
+                await moveLeft()
+                break
+            case 'ArrowRight':
+                if(!canMoveRight()) {
+                    setupInputOnce()
+                    return
+                }
+                await moveRight()
+                break                        
+        
+            default:
+                setupInputOnce()
+                return
+        }
+    
+        const newTile = new Tile(gameBoard)
+        grid.getRandomEmptyCell().linkTile(newTile)
+    
+        if (!canMoveUp() && !canMoveDown() && !canMoveLeft() && !canMoveRight()) {
+            await newTile.waitForAnimationEnd()
+            alert('Game over! Try again!!!!')
+            window.location.reload()
+            return
+        }
+    
+        setupInputOnce()
+    }
 }
+
+
 async function moveUp() {
     await slideTiles(grid.cellsGroupedByColumn)
 }
